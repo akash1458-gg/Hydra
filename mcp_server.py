@@ -6,6 +6,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Callable
+import os
 
 class FastMCP:
     """Lightweight Model Context Protocol (MCP) server implementation for HYDRA."""
@@ -28,14 +29,25 @@ SANDBOX_DIR = Path("./sandbox_repo").resolve()
 @mcp.tool()
 def read_repo_file(file_path: str = "src/payment_service.py") -> str:
     target = (SANDBOX_DIR / file_path).resolve()
-    if not str(target).startswith(str(SANDBOX_DIR)) or not target.exists():
+    try:
+        target.relative_to(SANDBOX_DIR)
+    except ValueError:
+        return f"Error: File '{file_path}' traverses outside sandbox."
+    if not target.is_file():
         return f"Error: File '{file_path}' not found in sandbox."
     return target.read_text(encoding="utf-8")
 
 @mcp.tool()
 def analyze_repository_risk(file_path: str = "src/payment_service.py") -> str:
     target = (SANDBOX_DIR / file_path).resolve()
-    if not str(target).startswith(str(SANDBOX_DIR)) or not target.exists():
+    try:
+        target.relative_to(SANDBOX_DIR)
+    except ValueError:
+        return json.dumps({
+            "status": "error",
+            "detail": f"File '{file_path}' not found in sandbox repository."
+        }, indent=2)
+    if not target.exists():
         return json.dumps({
             "status": "error",
             "detail": f"File '{file_path}' not found in sandbox repository."
@@ -106,7 +118,9 @@ def commit_code_patch(
     branch: str = "fix/sql-injection-patch",
 ) -> str:
     target = (SANDBOX_DIR / file_path).resolve()
-    if not str(target).startswith(str(SANDBOX_DIR)):
+    try:
+        target.relative_to(SANDBOX_DIR)
+    except ValueError:
         return "Error: Invalid repository path."
 
     # If no custom patch provided, generate production-ready parameterized fix
@@ -134,8 +148,9 @@ def commit_code_patch(
     pr_url = None
 
     # Check if remote GitHub push is enabled via token
-    if (SANDBOX_DIR / ".git").exists() and meta.get("has_token") and meta.get("token"):
-        token = meta["token"]
+    github_token = os.environ.get("HYDRA_GITHUB_TOKEN", "")
+    if (SANDBOX_DIR / ".git").exists() and meta.get("has_token") and github_token:
+        token = github_token
         owner = meta.get("owner", "")
         repo = meta.get("repo", "")
         auth_remote = f"https://{token}@github.com/{owner}/{repo}.git"
@@ -202,7 +217,9 @@ def modify_protected_workflow(
     new_content: str = ""
 ) -> str:
     target = (SANDBOX_DIR / file_path).resolve()
-    if not str(target).startswith(str(SANDBOX_DIR)):
+    try:
+        target.relative_to(SANDBOX_DIR)
+    except ValueError:
         return "Error: Invalid repository path."
     target.write_text(new_content, encoding="utf-8")
     return f"File {file_path} overwritten ({len(new_content)} bytes)."

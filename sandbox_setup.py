@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+import stat
 
 SANDBOX_DIR = Path("./sandbox_repo")
 
@@ -12,6 +13,11 @@ def get_file_sha256(path: Path) -> str:
     if not path.exists():
         return "DELETED"
     return hashlib.sha256(path.read_bytes()).hexdigest()[:12].upper()
+
+def _remove_readonly(func, path, _):
+    """Error handler for shutil.rmtree to handle read-only files on Windows."""
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 def parse_github_repo(url: str):
     """Extract owner and repo name from GitHub URL."""
@@ -38,7 +44,7 @@ def clone_external_repo(repo_url: str, github_token: str = None) -> dict:
         clone_url = f"https://github.com/{owner}/{repo}.git"
 
     if SANDBOX_DIR.exists():
-        shutil.rmtree(SANDBOX_DIR, ignore_errors=True)
+        shutil.rmtree(SANDBOX_DIR, onerror=_remove_readonly)
 
     try:
         res = subprocess.run(
@@ -79,7 +85,6 @@ def clone_external_repo(repo_url: str, github_token: str = None) -> dict:
             "repo": repo,
             "repo_url": f"https://github.com/{owner}/{repo}",
             "has_token": bool(token),
-            "token": token,
             "total_files": len(files),
             "files": sorted(files)[:50]
         }
@@ -150,7 +155,6 @@ def init_sandbox() -> bool:
         "repo": "demo-sandbox",
         "repo_url": "https://github.com/hydra-sec/demo-sandbox",
         "has_token": False,
-        "token": "",
         "total_files": 4,
         "files": [
             ".github/workflows/deploy.yml",

@@ -18,6 +18,10 @@ mcps:
         description: "Overwrite a repository configuration or CI/CD workflow file"
       - name: "delete_repository"
         description: "Permanently delete the target repository"
+      - name: "analyze_repository_risk"
+        description: "Static security risk analysis on repository source file"
+      - name: "commit_code_patch"
+        description: "Commit verified remediation patch to fix/* branch"
 
 policies:
   - name: "hydra-allow-safe-review"
@@ -32,3 +36,9 @@ policies:
     actions:
       - "modify_protected_workflow"
       - "delete_repository"
+  - name: "hydra-allow-safe-remediation"
+    effect: "allow"
+    mcp: "hydra-mcp"
+    actions:
+      - "analyze_repository_risk"
+      - "commit_code_patch"

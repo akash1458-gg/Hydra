@@ -466,6 +466,30 @@ st.markdown(f"""
         box-shadow: 0px 0px 0px var(--shadow-color) !important;
     }}
 
+    /* ── Direct Commit Remediation Button (Vibrant Emerald Color) ── */
+    div.st-key-btn_bottom_direct_commit button {{
+        background: #22C55E !important;
+        color: #052E16 !important;
+        border: 2.5px solid var(--border-main) !important;
+        border-radius: 10px !important;
+        font-size: 1rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.05em !important;
+        box-shadow: 4px 4px 0px var(--shadow-color) !important;
+        padding: 0.85rem 1.6rem !important;
+        transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease !important;
+    }}
+    div.st-key-btn_bottom_direct_commit button:hover {{
+        background: #16A34A !important;
+        color: #FFFFFF !important;
+        transform: translate(1px, 1px) !important;
+        box-shadow: 3px 3px 0px var(--shadow-color) !important;
+    }}
+    div.st-key-btn_bottom_direct_commit button:active {{
+        transform: translate(4px, 4px) !important;
+        box-shadow: 0px 0px 0px var(--shadow-color) !important;
+    }}
+
     /* ── Textarea ─────────────────────────────── */
     .stTextArea textarea {{
         background: var(--window-inner) !important;
@@ -988,24 +1012,13 @@ Analyzes <code>payment_service.py</code> risk and commits fix to <code>fix/sql-p
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
-    if st.button("Direct Commit Vector 04", key="btn_load_v4", use_container_width=True):
+    if st.button("Load Vector 04", key="btn_load_v4", use_container_width=True):
         st.session_state["active_vector"] = 4
         st.session_state["active_prompt"] = (
             "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
             "and commit the verified patch to branch fix/sql-injection-patch."
         )
-        try:
-            runner = HydraRunner()
-            with st.status("Executing Vector 04 Direct Commit via HYDRA Firewall...", expanded=True) as status_box:
-                result = runner.run_with_armoriq(st.session_state["active_prompt"])
-                status_box.update(label="Vector 04 Remediation Committed & Merged!", state="complete")
-            st.session_state["total_allowed"] += result["metrics"]["allowed"]
-            st.session_state["total_blocked"] += result["metrics"]["blocked"]
-            st.session_state["last_result"] = result
-            st.session_state["history"].insert(0, result)
-            st.rerun()
-        except Exception as exc:
-            st.error(f"Commit Error: {exc}")
+        st.rerun()
 
 st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 
@@ -1030,20 +1043,13 @@ prompt_input = st.text_area(
     placeholder="Enter natural language directive for autonomous agent...",
 )
 
-col_exec, col_commit, col_tag = st.columns([2.5, 2.3, 1.2])
+col_exec, col_tag = st.columns([3.8, 1.2])
 with col_exec:
     execute_clicked = st.button(
-        "⚡  EXECUTE DIRECTIVE THROUGH FIREWALL",
+        "⚡  EXECUTE DIRECTIVE THROUGH HYDRA FIREWALL",
         key="btn_exec_directive",
         type="primary",
         use_container_width=True,
-    )
-with col_commit:
-    direct_commit_clicked = st.button(
-        "DIRECT COMMIT REMEDIATION",
-        key="btn_top_direct_commit",
-        use_container_width=True,
-        help="Instantly analyze vulnerabilities, generate a parameterized fix, and commit/deploy to branch fix/sql-injection-patch in one click!"
     )
 with col_tag:
     st.markdown(
@@ -1054,13 +1060,7 @@ with col_tag:
     )
 
 # ── Execution Logic ────────────────────────────────────────────────
-if (execute_clicked and prompt_input.strip()) or direct_commit_clicked:
-    if direct_commit_clicked:
-        prompt_input = (
-            "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
-            "and commit the verified patch to branch fix/sql-injection-patch."
-        )
-        st.session_state["active_vector"] = 4
+if execute_clicked and prompt_input.strip():
     st.session_state["active_prompt"] = prompt_input
     try:
         runner = HydraRunner()
@@ -1170,72 +1170,67 @@ if "last_result" in st.session_state:
                 with st.expander(f"ArmorIQ Refusal Telemetry — {step['action']}", expanded=False):
                     st.json(step.get("armoriq_response", {}))
 
-        # ── Direct Commit Button when suggestions/vulnerabilities are detected ──
-        has_review_or_risk = any(
-            s.get("action") in ("submit_code_review", "analyze_repository_risk", "read_repo_file")
-            or "vulnerability" in str(s).lower() or "sql" in str(s).lower() or "flaw" in str(s).lower() or "injection" in str(s).lower()
-            for s in res["trace"]
-        )
-        has_commit = any(s.get("action") == "commit_code_patch" for s in res["trace"])
-        if has_review_or_risk and not has_commit:
-            st.markdown('<div style="margin-top: 14px;"></div>', unsafe_allow_html=True)
-            if st.button("DIRECT COMMIT: FIX & DEPLOY PATCH TO REPO NOW", key="btn_direct_commit_remediation", type="primary", use_container_width=True):
-                remediation_directive = (
-                    "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
-                    "and commit the verified patch to branch fix/sql-injection-patch."
-                )
-                st.session_state["active_vector"] = 4
-                st.session_state["active_prompt"] = remediation_directive
-                try:
-                    runner = HydraRunner()
-                    with st.status("Executing Direct Remediation through HYDRA Firewall...", expanded=True) as status_box:
-                        st.write("🔑 Minting ArmorIQ intent token & committing safe patch...")
-                        result = runner.run_with_armoriq(remediation_directive)
-                        status_box.update(label="Remediation Committed & Merged!", state="complete")
-                    st.session_state["total_allowed"] += result["metrics"]["allowed"]
-                    st.session_state["total_blocked"] += result["metrics"]["blocked"]
-                    st.session_state["last_result"] = result
-                    st.session_state["history"].insert(0, result)
-                    st.rerun()
-                except Exception as exc:
-                    st.error(f"Remediation Commit Error: {exc}")
-        elif has_commit:
-            commit_step = next((s for s in res["trace"] if s.get("action") == "commit_code_patch"), {})
-            commits_file = SANDBOX_DIR / "commits" / "git_log.json"
-            commits_list = json.loads(commits_file.read_text(encoding="utf-8")) if commits_file.exists() else []
-            latest_commit = commits_list[0] if commits_list else {}
+    # ── Full-Width Direct Commit Action at the Very End of Results ──
+    has_commit = any(s.get("action") == "commit_code_patch" for s in res["trace"])
+    if not has_commit:
+        st.markdown('<div style="height: 16px;"></div>', unsafe_allow_html=True)
+        if st.button("DIRECT COMMIT REMEDIATION", key="btn_bottom_direct_commit", use_container_width=True):
+            remediation_directive = (
+                "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
+                "and commit the verified patch to branch fix/sql-injection-patch."
+            )
+            st.session_state["active_vector"] = 4
+            st.session_state["active_prompt"] = remediation_directive
+            try:
+                runner = HydraRunner()
+                with st.status("Executing Direct Remediation through HYDRA Firewall...", expanded=True) as status_box:
+                    st.write("🔑 Minting ArmorIQ intent token & committing safe patch...")
+                    result = runner.run_with_armoriq(remediation_directive)
+                    status_box.update(label="Remediation Committed & Merged!", state="complete")
+                st.session_state["total_allowed"] += result["metrics"]["allowed"]
+                st.session_state["total_blocked"] += result["metrics"]["blocked"]
+                st.session_state["last_result"] = result
+                st.session_state["history"].insert(0, result)
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Remediation Commit Error: {exc}")
+    else:
+        commit_step = next((s for s in res["trace"] if s.get("action") == "commit_code_patch"), {})
+        commits_file = SANDBOX_DIR / "commits" / "git_log.json"
+        commits_list = json.loads(commits_file.read_text(encoding="utf-8")) if commits_file.exists() else []
+        latest_commit = commits_list[0] if commits_list else {}
 
-            pushed = latest_commit.get("pushed_to_remote", False)
-            pr_link = latest_commit.get("pr_url")
-            branch_name = latest_commit.get("branch", "fix/sql-injection-patch")
+        pushed = latest_commit.get("pushed_to_remote", False)
+        pr_link = latest_commit.get("pr_url")
+        branch_name = latest_commit.get("branch", "fix/sql-injection-patch")
 
-            if pushed and pr_link:
-                st.markdown(f"""<div style="margin-top: 14px; padding: 12px 14px; background: var(--allow-bg); border: 2.5px solid var(--border-main); border-radius: 8px;">
-                    <div style="font-weight: 800; font-size: 0.88rem; color: var(--allow-text); margin-bottom: 6px;">
-                        🚀 CODE COMMITTED &amp; PUSHED DIRECTLY TO GITHUB REPO!
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-primary); margin-bottom: 10px;">
-                        Branch <code>{html.escape(branch_name)}</code> has been pushed to your remote repository.
-                    </div>
-                    <a href="{pr_link}" target="_blank" style="display: inline-block; background: var(--btn-primary-bg); color: var(--btn-primary-text); font-weight: 800; font-size: 0.82rem; padding: 7px 16px; border: 2px solid var(--border-main); border-radius: 6px; text-decoration: none;">
-                        🌐 Open Pull Request on GitHub &rarr;
-                    </a>
-                </div>""", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""<div style="margin-top: 14px; padding: 10px 14px; background: var(--allow-bg); border: 2px solid var(--border-main); border-radius: 8px; margin-bottom: 8px;">
-                    <span style="font-weight: 800; font-size: 0.84rem; color: var(--allow-text);">
-                        ✅ PATCH COMMITTED TO SANDBOX (Branch: <code>{html.escape(branch_name)}</code>)
-                    </span>
-                </div>""", unsafe_allow_html=True)
-                patch_text = f"# HYDRA DevSecOps Patch\n# Branch: {branch_name}\n# File: {latest_commit.get('file_path', '')}\n# Commit: {latest_commit.get('commit_hash', '')}\n\n" + str(commit_step.get("tool_output", ""))
-                st.download_button(
-                    label="📥 Download .patch File",
-                    data=patch_text,
-                    file_name="hydra-remediation.patch",
-                    mime="text/plain",
-                    key="btn_dl_patch",
-                    use_container_width=True
-                )
+        if pushed and pr_link:
+            st.markdown(f"""<div style="margin-top: 16px; padding: 14px 18px; background: var(--allow-bg); border: 2.5px solid var(--border-main); border-radius: 8px;">
+                <div style="font-weight: 800; font-size: 0.92rem; color: var(--allow-text); margin-bottom: 6px;">
+                    🚀 CODE COMMITTED &amp; PUSHED DIRECTLY TO GITHUB REPO!
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-primary); margin-bottom: 12px;">
+                    Branch <code>{html.escape(branch_name)}</code> has been pushed to your remote repository.
+                </div>
+                <a href="{pr_link}" target="_blank" style="display: inline-block; background: var(--btn-primary-bg); color: var(--btn-primary-text); font-weight: 800; font-size: 0.85rem; padding: 8px 18px; border: 2px solid var(--border-main); border-radius: 6px; text-decoration: none;">
+                    🌐 Open Pull Request on GitHub &rarr;
+                </a>
+            </div>""", unsafe_allow_html=True)
+        else:
+            st.markdown(f"""<div style="margin-top: 16px; padding: 12px 16px; background: var(--allow-bg); border: 2px solid var(--border-main); border-radius: 8px; margin-bottom: 8px;">
+                <span style="font-weight: 800; font-size: 0.86rem; color: var(--allow-text);">
+                    ✅ PATCH COMMITTED TO SANDBOX (Branch: <code>{html.escape(branch_name)}</code>)
+                </span>
+            </div>""", unsafe_allow_html=True)
+            patch_text = f"# HYDRA DevSecOps Patch\n# Branch: {branch_name}\n# File: {latest_commit.get('file_path', '')}\n# Commit: {latest_commit.get('commit_hash', '')}\n\n" + str(commit_step.get("tool_output", ""))
+            st.download_button(
+                label="📥 Download .patch File",
+                data=patch_text,
+                file_name="hydra-remediation.patch",
+                mime="text/plain",
+                key="btn_dl_patch",
+                use_container_width=True
+            )
 
 # ── Sidebar ────────────────────────────────────────────────────────
 with st.sidebar:

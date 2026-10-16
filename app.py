@@ -171,7 +171,21 @@ st.markdown(f"""
     }}
 
     header[data-testid="stHeader"] {{
-        background: transparent !important;
+        background-color: var(--bg-main) !important;
+        background-image: radial-gradient(var(--border-main) 0.75px, transparent 0.75px) !important;
+        background-size: 24px 24px !important;
+        border-bottom: 2px solid var(--border-main) !important;
+        z-index: 999999 !important;
+        height: 2.85rem !important;
+    }}
+    div[data-testid="stDecoration"] {{
+        display: none !important;
+    }}
+    header[data-testid="stHeader"] button,
+    header[data-testid="stHeader"] a,
+    header[data-testid="stHeader"] svg {{
+        color: var(--text-primary) !important;
+        fill: var(--text-primary) !important;
     }}
 
     /* ── Sidebar ──────────────────────────────── */
@@ -1244,6 +1258,11 @@ with st.sidebar:
     if st.button(theme_text, key="btn_side_theme", use_container_width=True):
         st.session_state["theme_mode"] = "dark" if not is_dark else "light"
         st.rerun()
+
+    st.markdown('<div style="height: 6px;"></div>', unsafe_allow_html=True)
+    hide_toolbar = st.checkbox("Hide Top Streamlit Bar", value=False, key="chk_hide_toolbar", help="Hide the Streamlit Cloud header bar for a distraction-free full-screen UI.")
+    if hide_toolbar:
+        st.markdown("<style>header[data-testid='stHeader'] { display: none !important; } .block-container { padding-top: 1.5rem !important; }</style>", unsafe_allow_html=True)
 
     st.markdown('<div style="height: 8px;"></div>', unsafe_allow_html=True)
 

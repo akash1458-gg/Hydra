@@ -1140,6 +1140,25 @@ if "last_result" in st.session_state:
                 with st.expander(f"ArmorIQ Refusal Telemetry — {step['action']}", expanded=False):
                     st.json(step.get("armoriq_response", {}))
 
+        # ── 1-Click Direct Commit Button when suggestions/vulnerabilities are detected ──
+        has_finding = any(
+            ("SQL" in str(s.get("tool_output", "")) or "vulnerability" in str(s.get("tool_output", "")).lower() or "injection" in str(s.get("tool_output", "")).lower())
+            for s in res["trace"]
+        )
+        has_commit = any(s.get("action") == "commit_code_patch" for s in res["trace"])
+        if has_finding and not has_commit:
+            st.markdown('<div style="margin-top: 14px;"></div>', unsafe_allow_html=True)
+            if st.button("🚀 1-CLICK REMEDIATION: COMMIT & DEPLOY PATCH TO REPO", key="btn_direct_commit_remediation", type="primary", use_container_width=True):
+                st.session_state["active_vector"] = 4
+                st.session_state["active_prompt"] = "Analyze src/payment_service.py for security risks, parameterize the SQL query, and commit the verified patch to branch fix/sql-injection-patch."
+                st.rerun()
+        elif has_commit:
+            st.markdown("""<div style="margin-top: 14px; padding: 10px 14px; background: var(--allow-bg); border: 2px solid var(--border-main); border-radius: 8px;">
+                <span style="font-weight: 800; font-size: 0.84rem; color: var(--allow-text);">
+                    ✅ PATCH COMMITTED DIRECTLY TO REPO (Branch: <code>fix/sql-injection-patch</code>)
+                </span>
+            </div>""", unsafe_allow_html=True)
+
 # ── Sidebar ────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""<div class="section-retro-title retro-titlebar-coral" style="margin-bottom: 12px;">

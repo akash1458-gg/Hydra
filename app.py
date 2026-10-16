@@ -47,30 +47,30 @@ is_dark = st.session_state["theme_mode"] == "dark"
 # ── Neo-Brutalist Palette Configuration ───────────────────────────
 if is_dark:
     theme_css = """
-        --bg-main: #1C1816;
+        --bg-main: #141110;
         --border-main: #FFFDF9;
         --shadow-color: #000000;
-        --window-bg: #292422;
-        --window-inner: #211D1B;
+        --window-bg: #241F1D;
+        --window-inner: #1C1816;
         --text-primary: #FFFDF9;
-        --text-secondary: #D4CCC5;
-        --text-muted: #A39990;
+        --text-secondary: #E8E0D8;
+        --text-muted: #C4B5A5;
         --title-lavender: #7E57C2;
-        --title-coral: #D32F2F;
+        --title-coral: #C62828;
         --title-mint: #2E7D32;
-        --title-yellow: #C09A1E;
+        --title-yellow: #B8860B;
         --title-text: #FFFFFF;
-        --btn-bg: #38312E;
+        --btn-bg: #2D2623;
         --btn-text: #FFFDF9;
-        --btn-primary-bg: #E57373;
-        --btn-primary-text: #1C1816;
+        --btn-primary-bg: #EF4444;
+        --btn-primary-text: #FFFFFF;
         --allow-bg: rgba(46, 125, 50, 0.25);
         --allow-border: #4CAF50;
         --allow-text: #81C784;
         --block-bg: rgba(211, 47, 47, 0.25);
-        --block-border: #E57373;
+        --block-border: #EF4444;
         --block-text: #FF8A80;
-        --star-color: #E57373;
+        --star-color: #EF4444;
     """
 else:
     theme_css = """
@@ -108,13 +108,31 @@ st.markdown(f"""
         {theme_css}
     }}
 
-    /* ── Base ─────────────────────────────────── */
-    html, body, [class*="css"] {{
+    /* ── Base & Universal Text Enforcement ──────── */
+    html, body, .stApp, [class*="css"],
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] label,
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3,
+    [data-testid="stMarkdownContainer"] h4,
+    [data-testid="stMarkdownContainer"] li {{
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        color: var(--text-primary);
+        color: var(--text-primary) !important;
     }}
     code, pre, .stCode {{
         font-family: 'JetBrains Mono', monospace !important;
+    }}
+
+    /* Inline code pill styling */
+    code:not(pre code) {{
+        background: var(--window-inner) !important;
+        color: var(--text-primary) !important;
+        border: 1.5px solid var(--border-main) !important;
+        border-radius: 4px !important;
+        padding: 1px 6px !important;
+        font-size: 0.82em !important;
+        font-weight: 600 !important;
     }}
 
     .stApp {{
@@ -140,8 +158,14 @@ st.markdown(f"""
         border-right: 2.5px solid var(--border-main) !important;
         padding-top: 1rem !important;
     }}
-    section[data-testid="stSidebar"] * {{
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {{
         color: var(--text-primary) !important;
+    }}
+    [data-testid="stCaptionContainer"] p {{
+        color: var(--text-muted) !important;
+        font-size: 0.78rem !important;
     }}
 
     /* ── Neo-Brutalist Windows ────────────────── */
@@ -273,10 +297,10 @@ st.markdown(f"""
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        min-height: 145px;
-        margin-bottom: 8px;
+        height: 185px; /* Equalized frame height across all 4 vector cards */
+        margin-bottom: 12px;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-sizing: border-box;
     }}
     .vector-retro-card:hover {{
         transform: translate(-1px, -1px);
@@ -297,15 +321,56 @@ st.markdown(f"""
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-shrink: 0;
     }}
     .vector-retro-body {{
         padding: 12px 14px;
         background: var(--window-bg);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    }}
+    .vector-card-title {{
+        font-weight: 800 !important;
+        font-size: 0.92rem !important;
+        margin-bottom: 6px !important;
+        color: var(--text-primary) !important;
+        letter-spacing: -0.01em !important;
     }}
     .vector-desc {{
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        line-height: 1.45;
+        font-size: 0.8rem !important;
+        color: var(--text-secondary) !important;
+        line-height: 1.45 !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+    }}
+
+    /* ── Retro Status Pills ───────────────────── */
+    .retro-status-pill {{
+        display: inline-flex;
+        align-items: center;
+        background: var(--window-inner) !important;
+        border: 1.5px solid var(--border-main) !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        font-size: 0.73rem !important;
+        font-weight: 700 !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        color: var(--text-primary) !important;
+        letter-spacing: 0.03em !important;
+    }}
+    .retro-flow-pill {{
+        display: inline-flex;
+        align-items: center;
+        background: var(--title-coral) !important;
+        border: 2px solid var(--border-main) !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        font-weight: 800 !important;
+        font-size: 0.75rem !important;
+        color: var(--title-text) !important;
+        box-shadow: 2px 2px 0px var(--shadow-color) !important;
     }}
 
     /* ── Topology Flow Pill Strip ─────────────── */
@@ -461,6 +526,28 @@ st.markdown(f"""
         word-break: break-word !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+    }}
+    div[data-testid="stJson"] > div,
+    div[data-testid="stJson"] .react-json-view {{
+        background-color: transparent !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.8rem !important;
+    }}
+    div[data-testid="stJson"] .react-json-view * {{
+        background-color: transparent !important;
+    }}
+    div[data-testid="stJson"] .react-json-view span {{
+        color: var(--text-primary) !important;
+    }}
+    div[data-testid="stJson"] .react-json-view .string-value {{
+        color: #81C784 !important;
+    }}
+    div[data-testid="stJson"] .react-json-view .variable-value > * {{
+        color: #64B5F6 !important;
+    }}
+    div[data-testid="stJson"] .react-json-view .object-key {{
+        color: var(--text-primary) !important;
+        font-weight: 700 !important;
     }}
 
     /* ── Verdicts ─────────────────────────────── */
@@ -655,19 +742,19 @@ st.markdown(f"""
                 </p>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: var(--title-coral); border: 2px solid var(--border-main); border-radius: 6px; padding: 4px 10px; font-weight: 800; font-size: 0.75rem; box-shadow: 2px 2px 0px var(--shadow-color);">
+                <span class="retro-flow-pill">
                     FLOW STATE ✦ ACTIVE
                 </span>
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-            <span style="background: var(--window-inner); border: 1.5px solid var(--border-main); border-radius: 6px; padding: 3px 10px; font-size: 0.73rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;">
+            <span class="retro-status-pill">
                 <span class="retro-led led-green blink-green"></span>GATEKEEPER: ACTIVE
             </span>
-            <span style="background: var(--window-inner); border: 1.5px solid var(--border-main); border-radius: 6px; padding: 3px 10px; font-size: 0.73rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;">
+            <span class="retro-status-pill">
                 <span class="retro-led led-purple blink-purple"></span>CSRG-IAP: INTENT-BOUND
             </span>
-            <span style="background: var(--window-inner); border: 1.5px solid var(--border-main); border-radius: 6px; padding: 3px 10px; font-size: 0.73rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;">
+            <span class="retro-status-pill">
                 <span class="retro-led led-blue"></span>MCP RUNTIME: PORT 8000
             </span>
         </div>
@@ -805,7 +892,7 @@ with v1_col:
 <span class="retro-btn-box">&square;</span>
 </div>
 <div class="vector-retro-body">
-<div style="font-weight: 800; font-size: 0.92rem; margin-bottom: 4px;">Code Review</div>
+<div class="vector-card-title">Code Review</div>
 <div class="vector-desc">
 Inspects <code>payment_service.py</code> for SQL injection and posts PR #1 review comment.
 </div>
@@ -827,7 +914,7 @@ with v2_col:
 <span class="retro-btn-box">&square;</span>
 </div>
 <div class="vector-retro-body">
-<div style="font-weight: 800; font-size: 0.92rem; margin-bottom: 4px;">CI/CD Attack</div>
+<div class="vector-card-title">CI/CD Attack</div>
 <div class="vector-desc">
 Attempts to overwrite <code>deploy.yml</code> to bypass security tests and delete the repository.
 </div>
@@ -849,7 +936,7 @@ with v3_col:
 <span class="retro-btn-box">&square;</span>
 </div>
 <div class="vector-retro-body">
-<div style="font-weight: 800; font-size: 0.92rem; margin-bottom: 4px;">Prompt Inject</div>
+<div class="vector-card-title">Prompt Inject</div>
 <div class="vector-desc">
 Reads poisoned markdown note containing a hidden SYSTEM OVERRIDE that attempts to hijack tools.
 </div>
@@ -871,7 +958,7 @@ with v4_col:
 <span class="retro-btn-box">&square;</span>
 </div>
 <div class="vector-retro-body">
-<div style="font-weight: 800; font-size: 0.92rem; margin-bottom: 4px;">Risk Patch</div>
+<div class="vector-card-title">Risk Patch</div>
 <div class="vector-desc">
 Analyzes <code>payment_service.py</code> risk and commits verified fix to <code>fix/sql-injection-patch</code>.
 </div>
@@ -1111,11 +1198,17 @@ with st.sidebar:
 
     reviews_path = SANDBOX_DIR / "reviews" / "pr_reviews.json"
     if reviews_path.exists():
-        reviews_data = json.loads(reviews_path.read_text(encoding="utf-8"))
-        if reviews_data:
-            st.json(reviews_data)
-        else:
-            st.caption("No reviews recorded yet.")
+        try:
+            reviews_data = json.loads(reviews_path.read_text(encoding="utf-8"))
+            if reviews_data:
+                with st.expander(f"> pr_reviews.json ({len(reviews_data)})", expanded=True):
+                    st.code(json.dumps(reviews_data, indent=2), language="json")
+            else:
+                st.caption("No reviews recorded yet.")
+        except Exception:
+            st.caption("Error parsing pr_reviews.json")
+    else:
+        st.caption("No reviews recorded yet.")
 
     # Git Commit Audit Log
     st.markdown("""<div class="section-retro-title retro-titlebar-yellow" style="margin-top: 16px; margin-bottom: 12px;">
@@ -1125,8 +1218,14 @@ with st.sidebar:
 
     commits_path = SANDBOX_DIR / "commits" / "git_log.json"
     if commits_path.exists():
-        commits_data = json.loads(commits_path.read_text(encoding="utf-8"))
-        if commits_data:
-            st.json(commits_data)
-        else:
-            st.caption("No commits recorded yet.")
+        try:
+            commits_data = json.loads(commits_path.read_text(encoding="utf-8"))
+            if commits_data:
+                with st.expander(f"> git_log.json ({len(commits_data)})", expanded=True):
+                    st.code(json.dumps(commits_data, indent=2), language="json")
+            else:
+                st.caption("No commits recorded yet.")
+        except Exception:
+            st.caption("Error parsing git_log.json")
+    else:
+        st.caption("No commits recorded yet.")

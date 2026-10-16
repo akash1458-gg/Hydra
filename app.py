@@ -165,7 +165,7 @@ st.markdown(f"""
     }}
 
     .block-container {{
-        padding: 1.5rem 2rem 3rem 2rem !important;
+        padding: 4.2rem 2rem 3rem 2rem !important;
         max-width: 1360px !important;
         margin: 0 auto;
     }}
@@ -988,7 +988,7 @@ Analyzes <code>payment_service.py</code> risk and commits fix to <code>fix/sql-p
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
-    if st.button("🚀 Direct Commit Vector 04", key="btn_load_v4", use_container_width=True):
+    if st.button("Direct Commit Vector 04", key="btn_load_v4", use_container_width=True):
         st.session_state["active_vector"] = 4
         st.session_state["active_prompt"] = (
             "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
@@ -1040,7 +1040,7 @@ with col_exec:
     )
 with col_commit:
     direct_commit_clicked = st.button(
-        "🚀  DIRECT COMMIT REMEDIATION",
+        "DIRECT COMMIT REMEDIATION",
         key="btn_top_direct_commit",
         use_container_width=True,
         help="Instantly analyze vulnerabilities, generate a parameterized fix, and commit/deploy to branch fix/sql-injection-patch in one click!"
@@ -1179,7 +1179,7 @@ if "last_result" in st.session_state:
         has_commit = any(s.get("action") == "commit_code_patch" for s in res["trace"])
         if has_review_or_risk and not has_commit:
             st.markdown('<div style="margin-top: 14px;"></div>', unsafe_allow_html=True)
-            if st.button("🚀 DIRECT COMMIT: FIX & DEPLOY PATCH TO REPO NOW", key="btn_direct_commit_remediation", type="primary", use_container_width=True):
+            if st.button("DIRECT COMMIT: FIX & DEPLOY PATCH TO REPO NOW", key="btn_direct_commit_remediation", type="primary", use_container_width=True):
                 remediation_directive = (
                     "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
                     "and commit the verified patch to branch fix/sql-injection-patch."

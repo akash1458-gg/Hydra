@@ -137,20 +137,24 @@ st.markdown(f"""
     /* Inline code pill styling */
     code:not(pre code) {{
         display: inline-block !important;
-        vertical-align: -1px !important;
-        white-space: nowrap !important;
+        vertical-align: baseline !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
         background: var(--window-inner) !important;
         color: var(--text-primary) !important;
         border: 1.5px solid var(--border-main) !important;
         border-radius: 4px !important;
-        padding: 0px 5px !important;
-        font-size: 0.76em !important;
+        padding: 2px 6px !important;
+        font-size: 0.82em !important;
         font-weight: 600 !important;
-        line-height: 1.35 !important;
+        line-height: 1.4 !important;
+    }}
+    .vector-desc code {{
+        white-space: nowrap !important;
+        display: inline-block !important;
     }}
 
     .stApp {{
@@ -1115,7 +1119,9 @@ if "last_result" in st.session_state:
                 )
                 st.markdown(card_html, unsafe_allow_html=True)
                 with st.expander(f"Tool Output — {step['action']}", expanded=False):
-                    st.markdown(f"**Arguments:** `{json.dumps(step['inputs'])}`")
+                    st.markdown("**Arguments:**")
+                    st.code(json.dumps(step["inputs"], indent=2), language="json")
+                    st.markdown("**Result:**")
                     st.code(step.get("tool_output", ""), language="text")
             else:
                 refusal_type = step.get("armoriq_response", {}).get("violation_type", "Policy Refusal")

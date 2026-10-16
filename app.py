@@ -126,13 +126,19 @@ st.markdown(f"""
 
     /* Inline code pill styling */
     code:not(pre code) {{
+        display: inline-block !important;
+        vertical-align: baseline !important;
+        white-space: nowrap !important;
+        word-break: normal !important;
+        overflow-wrap: normal !important;
         background: var(--window-inner) !important;
         color: var(--text-primary) !important;
         border: 1.5px solid var(--border-main) !important;
         border-radius: 4px !important;
-        padding: 1px 6px !important;
-        font-size: 0.82em !important;
+        padding: 1px 5px !important;
+        font-size: 0.8em !important;
         font-weight: 600 !important;
+        line-height: 1.3 !important;
     }}
 
     .stApp {{
@@ -495,7 +501,7 @@ st.markdown(f"""
     .stCode,
     .stCode pre,
     .stCode code,
-    pre, code {{
+    pre {{
         white-space: pre-wrap !important;
         word-break: break-all !important;
         overflow-wrap: anywhere !important;
@@ -960,7 +966,7 @@ with v4_col:
 <div class="vector-retro-body">
 <div class="vector-card-title">Risk Patch</div>
 <div class="vector-desc">
-Analyzes <code>payment_service.py</code> risk and commits verified fix to <code>fix/sql-injection-patch</code>.
+Analyzes <code>payment_service.py</code> risk and commits patch to <code>fix/sql-injection-patch</code>.
 </div>
 </div>
 </div>""", unsafe_allow_html=True)

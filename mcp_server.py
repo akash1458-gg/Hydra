@@ -4,7 +4,22 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from mcp.server.fastmcp import FastMCP
+try:
+    from fastmcp import FastMCP
+except (ImportError, ModuleNotFoundError):
+    try:
+        from mcp.server.fastmcp import FastMCP
+    except (ImportError, ModuleNotFoundError):
+        class FastMCP:
+            def __init__(self, name: str = "hydra-mcp"):
+                self.name = name
+                self._tools = {}
+
+            def tool(self, *args, **kwargs):
+                def decorator(func):
+                    self._tools[func.__name__] = func
+                    return func
+                return decorator
 
 mcp = FastMCP("hydra-mcp")
 SANDBOX_DIR = Path("./sandbox_repo").resolve()

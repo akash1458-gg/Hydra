@@ -1,6 +1,7 @@
 armoriq-sdk[all]
 google-genai
-mcp
+mcp>=1.2.0,<2.0.0
+fastmcp
 httpx
 streamlit
 python-dotenv

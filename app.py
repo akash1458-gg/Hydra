@@ -4,7 +4,17 @@ import html
 import json
 import time
 from pathlib import Path
+import os
 import streamlit as st
+
+# Bridge Streamlit Cloud Secrets into environment variables if running in Cloud
+try:
+    for secret_key in ("ARMORIQ_API_KEY", "GEMINI_API_KEY"):
+        if secret_key in st.secrets and not os.environ.get(secret_key):
+            os.environ[secret_key] = str(st.secrets[secret_key])
+except Exception:
+    pass
+
 from sandbox_setup import init_sandbox, get_file_sha256, SANDBOX_DIR
 from agent_core import HydraRunner
 from check_setup import verify_environment

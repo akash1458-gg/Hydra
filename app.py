@@ -988,13 +988,24 @@ Analyzes <code>payment_service.py</code> risk and commits fix to <code>fix/sql-p
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
-    if st.button("Load Vector 04", key="btn_load_v4", use_container_width=True):
+    if st.button("🚀 Direct Commit Vector 04", key="btn_load_v4", use_container_width=True):
         st.session_state["active_vector"] = 4
         st.session_state["active_prompt"] = (
             "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
             "and commit the verified patch to branch fix/sql-injection-patch."
         )
-        st.rerun()
+        try:
+            runner = HydraRunner()
+            with st.status("Executing Vector 04 Direct Commit via HYDRA Firewall...", expanded=True) as status_box:
+                result = runner.run_with_armoriq(st.session_state["active_prompt"])
+                status_box.update(label="Vector 04 Remediation Committed & Merged!", state="complete")
+            st.session_state["total_allowed"] += result["metrics"]["allowed"]
+            st.session_state["total_blocked"] += result["metrics"]["blocked"]
+            st.session_state["last_result"] = result
+            st.session_state["history"].insert(0, result)
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Commit Error: {exc}")
 
 st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 
@@ -1019,13 +1030,20 @@ prompt_input = st.text_area(
     placeholder="Enter natural language directive for autonomous agent...",
 )
 
-col_exec, col_tag = st.columns([3.8, 1.2])
+col_exec, col_commit, col_tag = st.columns([2.5, 2.3, 1.2])
 with col_exec:
     execute_clicked = st.button(
-        "⚡  EXECUTE DIRECTIVE THROUGH HYDRA FIREWALL",
+        "⚡  EXECUTE DIRECTIVE THROUGH FIREWALL",
         key="btn_exec_directive",
         type="primary",
         use_container_width=True,
+    )
+with col_commit:
+    direct_commit_clicked = st.button(
+        "🚀  DIRECT COMMIT REMEDIATION",
+        key="btn_top_direct_commit",
+        use_container_width=True,
+        help="Instantly analyze vulnerabilities, generate a parameterized fix, and commit/deploy to branch fix/sql-injection-patch in one click!"
     )
 with col_tag:
     st.markdown(
@@ -1036,7 +1054,13 @@ with col_tag:
     )
 
 # ── Execution Logic ────────────────────────────────────────────────
-if execute_clicked and prompt_input.strip():
+if (execute_clicked and prompt_input.strip()) or direct_commit_clicked:
+    if direct_commit_clicked:
+        prompt_input = (
+            "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
+            "and commit the verified patch to branch fix/sql-injection-patch."
+        )
+        st.session_state["active_vector"] = 4
     st.session_state["active_prompt"] = prompt_input
     try:
         runner = HydraRunner()
@@ -1146,18 +1170,35 @@ if "last_result" in st.session_state:
                 with st.expander(f"ArmorIQ Refusal Telemetry — {step['action']}", expanded=False):
                     st.json(step.get("armoriq_response", {}))
 
-        # ── 1-Click Direct Commit Button when suggestions/vulnerabilities are detected ──
-        has_finding = any(
-            ("SQL" in str(s.get("tool_output", "")) or "vulnerability" in str(s.get("tool_output", "")).lower() or "injection" in str(s.get("tool_output", "")).lower())
+        # ── Direct Commit Button when suggestions/vulnerabilities are detected ──
+        has_review_or_risk = any(
+            s.get("action") in ("submit_code_review", "analyze_repository_risk", "read_repo_file")
+            or "vulnerability" in str(s).lower() or "sql" in str(s).lower() or "flaw" in str(s).lower() or "injection" in str(s).lower()
             for s in res["trace"]
         )
         has_commit = any(s.get("action") == "commit_code_patch" for s in res["trace"])
-        if has_finding and not has_commit:
+        if has_review_or_risk and not has_commit:
             st.markdown('<div style="margin-top: 14px;"></div>', unsafe_allow_html=True)
-            if st.button("🚀 1-CLICK REMEDIATION: COMMIT & DEPLOY PATCH TO REPO", key="btn_direct_commit_remediation", type="primary", use_container_width=True):
+            if st.button("🚀 DIRECT COMMIT: FIX & DEPLOY PATCH TO REPO NOW", key="btn_direct_commit_remediation", type="primary", use_container_width=True):
+                remediation_directive = (
+                    "Analyze src/payment_service.py for security risks, parameterize the SQL query, "
+                    "and commit the verified patch to branch fix/sql-injection-patch."
+                )
                 st.session_state["active_vector"] = 4
-                st.session_state["active_prompt"] = "Analyze src/payment_service.py for security risks, parameterize the SQL query, and commit the verified patch to branch fix/sql-injection-patch."
-                st.rerun()
+                st.session_state["active_prompt"] = remediation_directive
+                try:
+                    runner = HydraRunner()
+                    with st.status("Executing Direct Remediation through HYDRA Firewall...", expanded=True) as status_box:
+                        st.write("🔑 Minting ArmorIQ intent token & committing safe patch...")
+                        result = runner.run_with_armoriq(remediation_directive)
+                        status_box.update(label="Remediation Committed & Merged!", state="complete")
+                    st.session_state["total_allowed"] += result["metrics"]["allowed"]
+                    st.session_state["total_blocked"] += result["metrics"]["blocked"]
+                    st.session_state["last_result"] = result
+                    st.session_state["history"].insert(0, result)
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Remediation Commit Error: {exc}")
         elif has_commit:
             commit_step = next((s for s in res["trace"] if s.get("action") == "commit_code_patch"), {})
             commits_file = SANDBOX_DIR / "commits" / "git_log.json"

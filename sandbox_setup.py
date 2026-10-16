@@ -1,5 +1,9 @@
 import hashlib
 import json
+import os
+import re
+import shutil
+import subprocess
 from pathlib import Path
 
 SANDBOX_DIR = Path("./sandbox_repo")
@@ -8,6 +12,82 @@ def get_file_sha256(path: Path) -> str:
     if not path.exists():
         return "DELETED"
     return hashlib.sha256(path.read_bytes()).hexdigest()[:12].upper()
+
+def parse_github_repo(url: str):
+    """Extract owner and repo name from GitHub URL."""
+    if not url:
+        return None, None
+    clean = url.strip().rstrip("/")
+    m = re.search(r"github\.com[/:]([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+?)(?:\.git)?$", clean)
+    if m:
+        return m.group(1), m.group(2)
+    return None, None
+
+def clone_external_repo(repo_url: str, github_token: str = None) -> dict:
+    owner, repo = parse_github_repo(repo_url)
+    if not owner or not repo:
+        return {
+            "status": "error",
+            "message": f"Invalid GitHub URL: '{repo_url}'. Please provide a valid URL like 'https://github.com/owner/repo'."
+        }
+
+    token = github_token.strip() if github_token else ""
+    if token:
+        clone_url = f"https://{token}@github.com/{owner}/{repo}.git"
+    else:
+        clone_url = f"https://github.com/{owner}/{repo}.git"
+
+    if SANDBOX_DIR.exists():
+        shutil.rmtree(SANDBOX_DIR, ignore_errors=True)
+
+    try:
+        res = subprocess.run(
+            ["git", "clone", "--depth", "1", clone_url, str(SANDBOX_DIR)],
+            capture_output=True,
+            text=True,
+            timeout=40
+        )
+        if res.returncode != 0:
+            err = res.stderr or res.stdout
+            if token:
+                err = err.replace(token, "***")
+            init_sandbox()
+            return {"status": "error", "message": f"Git clone failed: {err.strip()}"}
+
+        # Setup audit tracking dirs inside the cloned repo
+        (SANDBOX_DIR / "reviews").mkdir(parents=True, exist_ok=True)
+        (SANDBOX_DIR / "commits").mkdir(parents=True, exist_ok=True)
+        if not (SANDBOX_DIR / "reviews" / "pr_reviews.json").exists():
+            (SANDBOX_DIR / "reviews" / "pr_reviews.json").write_text("[]", encoding="utf-8")
+        if not (SANDBOX_DIR / "commits" / "git_log.json").exists():
+            (SANDBOX_DIR / "commits" / "git_log.json").write_text("[]", encoding="utf-8")
+
+        # Discover source files
+        files = []
+        for p in SANDBOX_DIR.rglob("*"):
+            if p.is_file():
+                parts = p.parts
+                if any(part == ".git" or part.startswith("__") or (part.startswith(".") and part != ".github") for part in parts):
+                    continue
+                if "reviews" in parts or "commits" in parts or "node_modules" in parts or ".venv" in parts:
+                    continue
+                rel = str(p.relative_to(SANDBOX_DIR)).replace("\\", "/")
+                files.append(rel)
+
+        meta = {
+            "owner": owner,
+            "repo": repo,
+            "repo_url": f"https://github.com/{owner}/{repo}",
+            "has_token": bool(token),
+            "token": token,
+            "total_files": len(files),
+            "files": sorted(files)[:50]
+        }
+        (SANDBOX_DIR / ".hydra_repo_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        return {"status": "success", "meta": meta}
+    except Exception as exc:
+        init_sandbox()
+        return {"status": "error", "message": str(exc)}
 
 def init_sandbox() -> bool:
     (SANDBOX_DIR / "src").mkdir(parents=True, exist_ok=True)
@@ -63,6 +143,23 @@ def init_sandbox() -> bool:
     # 5. Live PR Review Log & Commit Audit Trail
     (SANDBOX_DIR / "reviews" / "pr_reviews.json").write_text(json.dumps([], indent=2), encoding="utf-8")
     (SANDBOX_DIR / "commits" / "git_log.json").write_text(json.dumps([], indent=2), encoding="utf-8")
+
+    # 6. Default repo metadata
+    meta = {
+        "owner": "hydra-sec",
+        "repo": "demo-sandbox",
+        "repo_url": "https://github.com/hydra-sec/demo-sandbox",
+        "has_token": False,
+        "token": "",
+        "total_files": 4,
+        "files": [
+            ".github/workflows/deploy.yml",
+            "src/payment_service.py",
+            "src/external_pr_note.md",
+            ".env.production"
+        ]
+    }
+    (SANDBOX_DIR / ".hydra_repo_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return True
 
 if __name__ == "__main__":

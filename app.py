@@ -15,7 +15,7 @@ try:
 except Exception:
     pass
 
-from sandbox_setup import init_sandbox, get_file_sha256, SANDBOX_DIR
+from sandbox_setup import init_sandbox, get_file_sha256, SANDBOX_DIR, clone_external_repo, parse_github_repo
 from agent_core import HydraRunner
 from check_setup import verify_environment
 
@@ -1159,11 +1159,42 @@ if "last_result" in st.session_state:
                 st.session_state["active_prompt"] = "Analyze src/payment_service.py for security risks, parameterize the SQL query, and commit the verified patch to branch fix/sql-injection-patch."
                 st.rerun()
         elif has_commit:
-            st.markdown("""<div style="margin-top: 14px; padding: 10px 14px; background: var(--allow-bg); border: 2px solid var(--border-main); border-radius: 8px;">
-                <span style="font-weight: 800; font-size: 0.84rem; color: var(--allow-text);">
-                    ✅ PATCH COMMITTED DIRECTLY TO REPO (Branch: <code>fix/sql-injection-patch</code>)
-                </span>
-            </div>""", unsafe_allow_html=True)
+            commit_step = next((s for s in res["trace"] if s.get("action") == "commit_code_patch"), {})
+            commits_file = SANDBOX_DIR / "commits" / "git_log.json"
+            commits_list = json.loads(commits_file.read_text(encoding="utf-8")) if commits_file.exists() else []
+            latest_commit = commits_list[0] if commits_list else {}
+
+            pushed = latest_commit.get("pushed_to_remote", False)
+            pr_link = latest_commit.get("pr_url")
+            branch_name = latest_commit.get("branch", "fix/sql-injection-patch")
+
+            if pushed and pr_link:
+                st.markdown(f"""<div style="margin-top: 14px; padding: 12px 14px; background: var(--allow-bg); border: 2.5px solid var(--border-main); border-radius: 8px;">
+                    <div style="font-weight: 800; font-size: 0.88rem; color: var(--allow-text); margin-bottom: 6px;">
+                        🚀 CODE COMMITTED &amp; PUSHED DIRECTLY TO GITHUB REPO!
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-primary); margin-bottom: 10px;">
+                        Branch <code>{html.escape(branch_name)}</code> has been pushed to your remote repository.
+                    </div>
+                    <a href="{pr_link}" target="_blank" style="display: inline-block; background: var(--btn-primary-bg); color: var(--btn-primary-text); font-weight: 800; font-size: 0.82rem; padding: 7px 16px; border: 2px solid var(--border-main); border-radius: 6px; text-decoration: none;">
+                        🌐 Open Pull Request on GitHub &rarr;
+                    </a>
+                </div>""", unsafe_allow_html=True)
+            else:
+                st.markdown(f"""<div style="margin-top: 14px; padding: 10px 14px; background: var(--allow-bg); border: 2px solid var(--border-main); border-radius: 8px; margin-bottom: 8px;">
+                    <span style="font-weight: 800; font-size: 0.84rem; color: var(--allow-text);">
+                        ✅ PATCH COMMITTED TO SANDBOX (Branch: <code>{html.escape(branch_name)}</code>)
+                    </span>
+                </div>""", unsafe_allow_html=True)
+                patch_text = f"# HYDRA DevSecOps Patch\n# Branch: {branch_name}\n# File: {latest_commit.get('file_path', '')}\n# Commit: {latest_commit.get('commit_hash', '')}\n\n" + str(commit_step.get("tool_output", ""))
+                st.download_button(
+                    label="📥 Download .patch File",
+                    data=patch_text,
+                    file_name="hydra-remediation.patch",
+                    mime="text/plain",
+                    key="btn_dl_patch",
+                    use_container_width=True
+                )
 
 # ── Sidebar ────────────────────────────────────────────────────────
 with st.sidebar:
@@ -1214,6 +1245,55 @@ with st.sidebar:
             if "last_result" in st.session_state:
                 del st.session_state["last_result"]
             st.rerun()
+
+    # Target Repository Configuration
+    st.markdown("""<div class="section-retro-title retro-titlebar-lavender" style="margin-top: 16px; margin-bottom: 12px;">
+        <span>TARGET_REPOSITORY.git</span>
+        <span class="retro-btn-box">&square;</span>
+    </div>""", unsafe_allow_html=True)
+
+    meta_path = SANDBOX_DIR / ".hydra_repo_meta.json"
+    curr_meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    is_custom_repo = curr_meta.get("owner") != "hydra-sec" and bool(curr_meta.get("owner"))
+
+    if is_custom_repo:
+        token_badge = "🔑 Write Access (Live PR Enabled)" if curr_meta.get("has_token") else "👁️ Read-Only (Local Audit & Patch)"
+        st.markdown(f"""
+        <div style="background: var(--window-inner); border: 1.5px solid var(--border-main); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+            <div style="font-weight: 800; font-size: 0.82rem; color: var(--text-primary);">
+                ● Connected: <code>{html.escape(curr_meta.get('owner', ''))}/{html.escape(curr_meta.get('repo', ''))}</code>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+                {token_badge} &bull; {curr_meta.get('total_files', 0)} files indexed
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("🔄 Reset to Demo Sandbox", key="btn_reset_default_sandbox", use_container_width=True):
+            init_sandbox()
+            st.rerun()
+    else:
+        st.markdown('<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">Connect any public or private GitHub repository:</div>', unsafe_allow_html=True)
+        input_repo_url = st.text_input("GitHub Repo URL", placeholder="https://github.com/owner/repo", key="input_repo_url")
+        input_gh_token = st.text_input("GitHub Token (Optional for write/PRs)", placeholder="ghp_... (leave empty for read-only)", type="password", key="input_gh_token", help="Leave blank for local audit & patch preview. Provide a token with 'repo' scope to push branches and open Pull Requests directly on GitHub.")
+
+        if st.button("🔗 Connect & Protect Repo", key="btn_connect_repo", type="primary", use_container_width=True):
+            if input_repo_url and input_repo_url.strip():
+                with st.spinner("Cloning & indexing repository..."):
+                    res = clone_external_repo(input_repo_url.strip(), input_gh_token.strip() if input_gh_token else None)
+                    if res.get("status") == "success":
+                        st.success(f"Connected: {res['meta']['owner']}/{res['meta']['repo']} ({res['meta']['total_files']} files)")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error(res.get("message", "Clone failed."))
+            else:
+                st.warning("Please enter a GitHub repository URL.")
+
+    # Show list of indexed repository files
+    if curr_meta.get("files"):
+        with st.expander(f"📁 Indexed Repo Files ({curr_meta.get('total_files', len(curr_meta['files']))})", expanded=False):
+            for f in curr_meta["files"]:
+                st.markdown(f"- `{f}`")
 
     # Sandbox Assets
     st.markdown("""<div class="section-retro-title retro-titlebar-mint" style="margin-top: 16px; margin-bottom: 12px;">

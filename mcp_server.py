@@ -2,6 +2,7 @@
 import hashlib
 import json
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Callable
@@ -124,12 +125,38 @@ def commit_code_patch(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(patch_content, encoding="utf-8")
 
+    # Load repo metadata
+    meta_file = SANDBOX_DIR / ".hydra_repo_meta.json"
+    meta = json.loads(meta_file.read_text(encoding="utf-8")) if meta_file.exists() else {}
+
+    commit_hash = hashlib.sha256(f"{datetime.now(timezone.utc).isoformat()}{patch_content}".encode()).hexdigest()[:8]
+    pushed_to_remote = False
+    pr_url = None
+
+    # Check if remote GitHub push is enabled via token
+    if (SANDBOX_DIR / ".git").exists() and meta.get("has_token") and meta.get("token"):
+        token = meta["token"]
+        owner = meta.get("owner", "")
+        repo = meta.get("repo", "")
+        auth_remote = f"https://{token}@github.com/{owner}/{repo}.git"
+        try:
+            subprocess.run(["git", "config", "user.name", "HYDRA Security Bot"], cwd=str(SANDBOX_DIR), capture_output=True)
+            subprocess.run(["git", "config", "user.email", "bot@hydra.security"], cwd=str(SANDBOX_DIR), capture_output=True)
+            subprocess.run(["git", "checkout", "-B", branch], cwd=str(SANDBOX_DIR), capture_output=True)
+            subprocess.run(["git", "add", file_path], cwd=str(SANDBOX_DIR), capture_output=True)
+            subprocess.run(["git", "commit", "-m", commit_message], cwd=str(SANDBOX_DIR), capture_output=True)
+            push_res = subprocess.run(["git", "push", auth_remote, branch, "--force"], cwd=str(SANDBOX_DIR), capture_output=True, text=True, timeout=25)
+            if push_res.returncode == 0:
+                pushed_to_remote = True
+                pr_url = f"https://github.com/{owner}/{repo}/compare/{branch}?expand=1"
+        except Exception:
+            pass
+
     # Record commit audit entry
     commits_file = SANDBOX_DIR / "commits" / "git_log.json"
     commits_file.parent.mkdir(parents=True, exist_ok=True)
     commits = json.loads(commits_file.read_text(encoding="utf-8")) if commits_file.exists() else []
 
-    commit_hash = hashlib.sha256(f"{datetime.now(timezone.utc).isoformat()}{patch_content}".encode()).hexdigest()[:8]
     entry = {
         "commit_hash": commit_hash,
         "branch": str(branch),
@@ -137,11 +164,15 @@ def commit_code_patch(
         "message": str(commit_message),
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "lines_changed": len(patch_content.splitlines()),
-        "verified_by": "ArmorIQ CSRG-IAP Intent Token"
+        "verified_by": "ArmorIQ CSRG-IAP Intent Token",
+        "pushed_to_remote": pushed_to_remote,
+        "pr_url": pr_url
     }
     commits.insert(0, entry)
     commits_file.write_text(json.dumps(commits, indent=2), encoding="utf-8")
 
+    if pushed_to_remote and pr_url:
+        return f"Commit [{commit_hash}] verified & PUSHED to remote branch '{branch}' on GitHub! Pull Request link: {pr_url}"
     return f"Commit [{commit_hash}] verified & merged into '{branch}': {commit_message}. File '{file_path}' updated ({len(patch_content)} bytes)."
 
 @mcp.tool()

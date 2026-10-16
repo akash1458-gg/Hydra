@@ -457,7 +457,12 @@ class HydraRunner:
                     invoke_response = {"status": "authorized_local_sandbox", "enforced_by": "ArmorIQ Policy Engine"}
 
                 tool_fn = self.local_mcp_tools.get(action_name)
-                real_output = tool_fn(**inputs) if tool_fn else str(invoke_response)
+                if tool_fn:
+                    sig = inspect.signature(tool_fn)
+                    valid_params = {k: v for k, v in inputs.items() if k in sig.parameters}
+                    real_output = tool_fn(**valid_params)
+                else:
+                    real_output = str(invoke_response)
                 step_ms = int((time.perf_counter() - step_t0) * 1000) or 8
 
                 execution_trace.append({

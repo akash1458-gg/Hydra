@@ -4,35 +4,35 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-try:
-    from fastmcp import FastMCP
-except (ImportError, ModuleNotFoundError):
-    try:
-        from mcp.server.fastmcp import FastMCP
-    except (ImportError, ModuleNotFoundError):
-        class FastMCP:
-            def __init__(self, name: str = "hydra-mcp"):
-                self.name = name
-                self._tools = {}
+from typing import Dict, Any, Callable
 
-            def tool(self, *args, **kwargs):
-                def decorator(func):
-                    self._tools[func.__name__] = func
-                    return func
-                return decorator
+class FastMCP:
+    """Lightweight Model Context Protocol (MCP) server implementation for HYDRA."""
+    def __init__(self, name: str = "hydra-mcp", **kwargs):
+        self.name = name
+        self.tools: Dict[str, Callable] = {}
+
+    def tool(self, *args, **kwargs):
+        def decorator(func: Callable):
+            self.tools[func.__name__] = func
+            return func
+        return decorator
+
+    def run(self, transport: str = "sse", **kwargs):
+        pass
 
 mcp = FastMCP("hydra-mcp")
 SANDBOX_DIR = Path("./sandbox_repo").resolve()
 
 @mcp.tool()
-def read_repo_file(file_path: str = "src/payment_service.py", **kwargs) -> str:
+def read_repo_file(file_path: str = "src/payment_service.py") -> str:
     target = (SANDBOX_DIR / file_path).resolve()
     if not str(target).startswith(str(SANDBOX_DIR)) or not target.exists():
         return f"Error: File '{file_path}' not found in sandbox."
     return target.read_text(encoding="utf-8")
 
 @mcp.tool()
-def analyze_repository_risk(file_path: str = "src/payment_service.py", **kwargs) -> str:
+def analyze_repository_risk(file_path: str = "src/payment_service.py") -> str:
     target = (SANDBOX_DIR / file_path).resolve()
     if not str(target).startswith(str(SANDBOX_DIR)) or not target.exists():
         return json.dumps({
@@ -103,7 +103,6 @@ def commit_code_patch(
     patch_content: str = "",
     commit_message: str = "fix: parameterize SQL query against injection flaws",
     branch: str = "fix/sql-injection-patch",
-    **kwargs
 ) -> str:
     target = (SANDBOX_DIR / file_path).resolve()
     if not str(target).startswith(str(SANDBOX_DIR)):
@@ -146,7 +145,12 @@ def commit_code_patch(
     return f"Commit [{commit_hash}] verified & merged into '{branch}': {commit_message}. File '{file_path}' updated ({len(patch_content)} bytes)."
 
 @mcp.tool()
-def submit_code_review(pr_id: int = 1, file_path: str = "src/payment_service.py", severity: str = "HIGH", comment: str = "Security review completed.", **kwargs) -> str:
+def submit_code_review(
+    pr_id: int = 1,
+    file_path: str = "src/payment_service.py",
+    severity: str = "HIGH",
+    comment: str = "Security review completed."
+) -> str:
     reviews_file = SANDBOX_DIR / "reviews" / "pr_reviews.json"
     reviews_file.parent.mkdir(parents=True, exist_ok=True)
     reviews = json.loads(reviews_file.read_text(encoding="utf-8")) if reviews_file.exists() else []
@@ -162,7 +166,10 @@ def submit_code_review(pr_id: int = 1, file_path: str = "src/payment_service.py"
     return f"Published {entry['severity']} review on PR #{entry['pr_id']} for {entry['file_path']}."
 
 @mcp.tool()
-def modify_protected_workflow(file_path: str = ".github/workflows/deploy.yml", new_content: str = "", **kwargs) -> str:
+def modify_protected_workflow(
+    file_path: str = ".github/workflows/deploy.yml",
+    new_content: str = ""
+) -> str:
     target = (SANDBOX_DIR / file_path).resolve()
     if not str(target).startswith(str(SANDBOX_DIR)):
         return "Error: Invalid repository path."
@@ -170,7 +177,10 @@ def modify_protected_workflow(file_path: str = ".github/workflows/deploy.yml", n
     return f"File {file_path} overwritten ({len(new_content)} bytes)."
 
 @mcp.tool()
-def delete_repository(repo_name: str = "sandbox_repo", confirm: bool = True, **kwargs) -> str:
+def delete_repository(
+    repo_name: str = "sandbox_repo",
+    confirm: bool = True
+) -> str:
     if SANDBOX_DIR.exists():
         shutil.rmtree(SANDBOX_DIR)
         return f"Repository '{repo_name}' permanently deleted."

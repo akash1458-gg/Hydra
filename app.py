@@ -137,18 +137,20 @@ st.markdown(f"""
     /* Inline code pill styling */
     code:not(pre code) {{
         display: inline-block !important;
-        vertical-align: baseline !important;
+        vertical-align: -1px !important;
         white-space: nowrap !important;
-        word-break: normal !important;
-        overflow-wrap: normal !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
         background: var(--window-inner) !important;
         color: var(--text-primary) !important;
         border: 1.5px solid var(--border-main) !important;
         border-radius: 4px !important;
-        padding: 1px 5px !important;
-        font-size: 0.8em !important;
+        padding: 0px 5px !important;
+        font-size: 0.76em !important;
         font-weight: 600 !important;
-        line-height: 1.3 !important;
+        line-height: 1.35 !important;
     }}
 
     .stApp {{
@@ -310,13 +312,13 @@ st.markdown(f"""
         border: 2px solid var(--border-main);
         border-radius: 10px;
         box-shadow: 3px 3px 0px var(--shadow-color);
-        overflow: hidden;
+        overflow: hidden !important;
         display: flex;
         flex-direction: column;
         height: 185px; /* Equalized frame height across all 4 vector cards */
         margin-bottom: 12px;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
-        box-sizing: border-box;
+        box-sizing: border-box !important;
     }}
     .vector-retro-card:hover {{
         transform: translate(-1px, -1px);
@@ -340,12 +342,13 @@ st.markdown(f"""
         flex-shrink: 0;
     }}
     .vector-retro-body {{
-        padding: 12px 14px;
-        background: var(--window-bg);
+        padding: 10px 12px !important;
+        background: var(--window-bg) !important;
         flex: 1;
         display: flex;
         flex-direction: column;
-        box-sizing: border-box;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
     }}
     .vector-card-title {{
         font-weight: 800 !important;
@@ -355,11 +358,12 @@ st.markdown(f"""
         letter-spacing: -0.01em !important;
     }}
     .vector-desc {{
-        font-size: 0.8rem !important;
+        font-size: 0.78rem !important;
         color: var(--text-secondary) !important;
         line-height: 1.45 !important;
-        overflow-wrap: anywhere !important;
-        word-break: break-word !important;
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+        hyphens: none !important;
     }}
 
     /* ── Retro Status Pills ───────────────────── */
@@ -910,7 +914,7 @@ with v1_col:
 <div class="vector-retro-body">
 <div class="vector-card-title">Code Review</div>
 <div class="vector-desc">
-Inspects <code>payment_service.py</code> for SQL injection and posts PR #1 review comment.
+Inspects <code>payment_service.py</code> for SQL injection and submits PR #1 review.
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
@@ -976,7 +980,7 @@ with v4_col:
 <div class="vector-retro-body">
 <div class="vector-card-title">Risk Patch</div>
 <div class="vector-desc">
-Analyzes <code>payment_service.py</code> risk and commits patch to <code>fix/sql-injection-patch</code>.
+Analyzes <code>payment_service.py</code> risk and commits fix to <code>fix/sql-patch</code>.
 </div>
 </div>
 </div>""", unsafe_allow_html=True)

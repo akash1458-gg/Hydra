@@ -174,7 +174,9 @@ st.markdown(f"""
         background-color: var(--bg-main) !important;
         background-image: radial-gradient(var(--border-main) 0.75px, transparent 0.75px) !important;
         background-size: 24px 24px !important;
-        border-bottom: 2px solid var(--border-main) !important;
+        border: none !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
         z-index: 999999 !important;
         height: 2.85rem !important;
     }}
@@ -186,6 +188,21 @@ st.markdown(f"""
     header[data-testid="stHeader"] svg {{
         color: var(--text-primary) !important;
         fill: var(--text-primary) !important;
+    }}
+
+    /* ── Hide Streamlit Cloud Bottom-Right 'Manage app' Black Bar ── */
+    [data-testid="stViewerBadge"],
+    .viewerBadge_container__r5tak,
+    div[class*="viewerBadge"],
+    div[data-testid="stStatusWidget"],
+    #manage-app-button,
+    button[data-testid="manage-app-button"],
+    .stAppDeployButton,
+    footer {{
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }}
 
     /* ── Sidebar ──────────────────────────────── */

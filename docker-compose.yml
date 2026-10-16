@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  hydra-firewall:
+    build: .
+    container_name: hydra-firewall
+    ports:
+      - "8501:8501"
+    environment:
+      - ARMORIQ_API_KEY=${ARMORIQ_API_KEY}
+      - ARMORIQ_AGENT_ID=${ARMORIQ_AGENT_ID:-hydra-dev-agent}
+      - ARMORIQ_USER_EMAIL=${ARMORIQ_USER_EMAIL:-developer@hydra.security}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.8-flash}
+    volumes:
+      - ./sandbox_repo:/app/sandbox_repo
+    restart: unless-stopped

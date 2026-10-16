@@ -1,0 +1,7 @@
+armoriq-sdk[all]
+google-genai
+mcp
+httpx
+streamlit
+python-dotenv
+pydantic

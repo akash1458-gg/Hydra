@@ -1,0 +1,34 @@
+version: "1.0"
+agent:
+  id: "hydra-dev-agent"
+  name: "Hydra Autonomous DevSecOps Agent"
+  description: "Enterprise AI Agent Firewall & Repository Controller for HackBriven Flow State"
+
+mcps:
+  - name: "hydra-mcp"
+    description: "Hydra Repository File, PR Review, and Workflow MCP Server"
+    transport: "sse"
+    url: "http://localhost:8000/sse"
+    tools:
+      - name: "read_repo_file"
+        description: "Read source code or markdown files from the repository"
+      - name: "submit_code_review"
+        description: "Publish a structured code review comment on a Pull Request"
+      - name: "modify_protected_workflow"
+        description: "Overwrite a repository configuration or CI/CD workflow file"
+      - name: "delete_repository"
+        description: "Permanently delete the target repository"
+
+policies:
+  - name: "hydra-allow-safe-review"
+    effect: "allow"
+    mcp: "hydra-mcp"
+    actions:
+      - "read_repo_file"
+      - "submit_code_review"
+  - name: "hydra-block-destructive-ops"
+    effect: "deny"
+    mcp: "hydra-mcp"
+    actions:
+      - "modify_protected_workflow"
+      - "delete_repository"

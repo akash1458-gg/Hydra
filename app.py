@@ -544,6 +544,56 @@ st.markdown(f"""
         box-shadow: 3px 3px 0px var(--shadow-color) !important;
     }}
 
+    /* ── Text Input Boxes (Neo-Brutalist Boxed Styling) ── */
+    div[data-testid="stTextInput"] {{
+        margin-bottom: 8px !important;
+    }}
+    div[data-testid="stTextInput"] input,
+    .stTextInput input,
+    div[data-testid="stTextInputRootElement"] input,
+    div[data-baseweb="input"] input {{
+        background: var(--window-inner) !important;
+        border: 2px solid var(--border-main) !important;
+        border-radius: 8px !important;
+        box-shadow: 2.5px 2.5px 0px var(--shadow-color) !important;
+        color: var(--text-primary) !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.82rem !important;
+        padding: 8px 12px !important;
+        outline: none !important;
+        transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.15s ease !important;
+    }}
+    div[data-testid="stTextInput"] input:focus,
+    .stTextInput input:focus,
+    div[data-testid="stTextInputRootElement"] input:focus,
+    div[data-baseweb="input"] input:focus {{
+        border-color: var(--border-main) !important;
+        box-shadow: 3.5px 3.5px 0px var(--shadow-color) !important;
+        outline: none !important;
+    }}
+    div[data-baseweb="input"] {{
+        background: transparent !important;
+        border: none !important;
+    }}
+    div[data-testid="stTextInput"] label,
+    .stTextInput label {{
+        font-weight: 700 !important;
+        font-size: 0.80rem !important;
+        color: var(--text-primary) !important;
+        margin-bottom: 4px !important;
+    }}
+
+    /* ── Bordered Containers (Neo-Brutalist Card Boxes) ── */
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    section[data-testid="stSidebar"] div[data-testid="stVerticalBlockBorderWrapper"] {{
+        background: var(--window-bg) !important;
+        border: 2px solid var(--border-main) !important;
+        border-radius: 10px !important;
+        box-shadow: 3px 3px 0px var(--shadow-color) !important;
+        padding: 12px 14px 10px 14px !important;
+        margin-bottom: 12px !important;
+    }}
+
     /* ── Expanders ────────────────────────────── */
     .streamlit-expanderHeader {{
         background: var(--window-bg) !important;
@@ -1352,35 +1402,39 @@ with st.sidebar:
     if is_custom_repo:
         token_badge = "🔑 Write Access (Live PR Enabled)" if curr_meta.get("has_token") else "👁️ Read-Only (Local Audit & Patch)"
         st.markdown(f"""
-        <div style="background: var(--window-inner); border: 1.5px solid var(--border-main); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
-            <div style="font-weight: 800; font-size: 0.82rem; color: var(--text-primary);">
+        <div style="background: var(--window-inner); border: 2px solid var(--border-main); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 3px 3px 0px var(--shadow-color);">
+            <div style="font-weight: 800; font-size: 0.84rem; color: var(--text-primary);">
                 ● Connected: <code>{html.escape(curr_meta.get('owner', ''))}/{html.escape(curr_meta.get('repo', ''))}</code>
             </div>
-            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;">
                 {token_badge} &bull; {curr_meta.get('total_files', 0)} files indexed
             </div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("🔄 Reset to Demo Sandbox", key="btn_reset_default_sandbox", use_container_width=True):
             init_sandbox()
+            os.environ.pop("HYDRA_GITHUB_TOKEN", None)
             st.rerun()
     else:
-        st.markdown('<div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">Connect any public or private GitHub repository:</div>', unsafe_allow_html=True)
-        input_repo_url = st.text_input("GitHub Repo URL", placeholder="https://github.com/owner/repo", key="input_repo_url")
-        input_gh_token = st.text_input("GitHub Token (Optional for write/PRs)", placeholder="ghp_... (leave empty for read-only)", type="password", key="input_gh_token", help="Leave blank for local audit & patch preview. Provide a token with 'repo' scope to push branches and open Pull Requests directly on GitHub.")
-
-        if st.button("🔗 Connect & Protect Repo", key="btn_connect_repo", type="primary", use_container_width=True):
-            if input_repo_url and input_repo_url.strip():
-                with st.spinner("Cloning & indexing repository..."):
-                    res = clone_external_repo(input_repo_url.strip(), input_gh_token.strip() if input_gh_token else None)
-                    if res.get("status") == "success":
-                        st.success(f"Connected: {res['meta']['owner']}/{res['meta']['repo']} ({res['meta']['total_files']} files)")
-                        time.sleep(0.5)
-                        st.rerun()
-                    else:
-                        st.error(res.get("message", "Clone failed."))
-            else:
-                st.warning("Please enter a GitHub repository URL.")
+        with st.container(border=True):
+            st.markdown('<div style="font-size: 0.76rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">Connect any public or private GitHub repository:</div>', unsafe_allow_html=True)
+            input_repo_url = st.text_input("GitHub Repo URL", placeholder="https://github.com/owner/repo", key="input_repo_url")
+            input_gh_token = st.text_input("GitHub Token (Optional for write/PRs)", placeholder="ghp_... (leave empty for read-only)", type="password", key="input_gh_token", help="Leave blank for local audit & patch preview. Provide a token with 'repo' scope to push branches and open Pull Requests directly on GitHub.")
+            st.markdown('<div style="height: 4px;"></div>', unsafe_allow_html=True)
+            if st.button("🔗 Connect & Protect Repo", key="btn_connect_repo", type="primary", use_container_width=True):
+                if input_repo_url and input_repo_url.strip():
+                    with st.spinner("Cloning & indexing repository..."):
+                        res = clone_external_repo(input_repo_url.strip(), input_gh_token.strip() if input_gh_token else None)
+                        if res.get("status") == "success":
+                            if input_gh_token and input_gh_token.strip():
+                                os.environ["HYDRA_GITHUB_TOKEN"] = input_gh_token.strip()
+                            st.success(f"Connected: {res['meta']['owner']}/{res['meta']['repo']} ({res['meta']['total_files']} files)")
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.error(res.get("message", "Clone failed."))
+                else:
+                    st.warning("Please enter a GitHub repository URL.")
 
     # Show list of indexed repository files
     if curr_meta.get("files"):
@@ -1394,19 +1448,33 @@ with st.sidebar:
         <span class="retro-btn-box">&square;</span>
     </div>""", unsafe_allow_html=True)
 
-    if workflow_file.exists():
-        with st.expander(f"> deploy.yml · {workflow_hash[:8]}"):
-            st.code(workflow_file.read_text(encoding="utf-8"), language="yaml")
+    if is_custom_repo:
+        ext_files = curr_meta.get("files", [])
+        if ext_files:
+            for ext_f in ext_files[:5]:
+                fpath = SANDBOX_DIR / ext_f
+                if fpath.exists() and fpath.is_file():
+                    with st.expander(f"> {ext_f}"):
+                        try:
+                            st.code(fpath.read_text(encoding="utf-8")[:1200], language="text")
+                        except Exception:
+                            st.caption("(Binary or non-text file)")
+        else:
+            st.caption("No files available in external repository.")
+    else:
+        if workflow_file.exists():
+            with st.expander(f"> deploy.yml · {workflow_hash[:8]}"):
+                st.code(workflow_file.read_text(encoding="utf-8"), language="yaml")
 
-    payment_file = SANDBOX_DIR / "src" / "payment_service.py"
-    if payment_file.exists():
-        with st.expander("> payment_service.py"):
-            st.code(payment_file.read_text(encoding="utf-8"), language="python")
+        payment_file = SANDBOX_DIR / "src" / "payment_service.py"
+        if payment_file.exists():
+            with st.expander("> payment_service.py"):
+                st.code(payment_file.read_text(encoding="utf-8"), language="python")
 
-    poison_file = SANDBOX_DIR / "src" / "external_pr_note.md"
-    if poison_file.exists():
-        with st.expander("> external_pr_note.md [Poisoned]"):
-            st.code(poison_file.read_text(encoding="utf-8"), language="markdown")
+        poison_file = SANDBOX_DIR / "src" / "external_pr_note.md"
+        if poison_file.exists():
+            with st.expander("> external_pr_note.md [Poisoned]"):
+                st.code(poison_file.read_text(encoding="utf-8"), language="markdown")
 
     # PR #1 Reviews
     st.markdown("""<div class="section-retro-title retro-titlebar-lavender" style="margin-top: 16px; margin-bottom: 12px;">

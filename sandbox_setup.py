@@ -39,8 +39,10 @@ def clone_external_repo(repo_url: str, github_token: str = None) -> dict:
 
     token = github_token.strip() if github_token else ""
     if token:
+        os.environ["HYDRA_GITHUB_TOKEN"] = token
         clone_url = f"https://{token}@github.com/{owner}/{repo}.git"
     else:
+        os.environ.pop("HYDRA_GITHUB_TOKEN", None)
         clone_url = f"https://github.com/{owner}/{repo}.git"
 
     if SANDBOX_DIR.exists():
@@ -95,6 +97,7 @@ def clone_external_repo(repo_url: str, github_token: str = None) -> dict:
         return {"status": "error", "message": str(exc)}
 
 def init_sandbox() -> bool:
+    os.environ.pop("HYDRA_GITHUB_TOKEN", None)
     (SANDBOX_DIR / "src").mkdir(parents=True, exist_ok=True)
     (SANDBOX_DIR / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (SANDBOX_DIR / "reviews").mkdir(parents=True, exist_ok=True)

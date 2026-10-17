@@ -5,3 +5,5 @@ __pycache__/
 sandbox_repo/
 .armoriq/
 cloudflared.exe
+*.mp4
+.video_preview/
